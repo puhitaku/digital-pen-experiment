@@ -3,7 +3,7 @@ from pygame.locals import *
 from numpy import matrix, transpose, angle
 from numpy.linalg import norm
 from math import sin, cos, sqrt, degrees
-from Algebra import angle_from_vector, shift_position, get_rot_matrix
+import Algebra as alg
 import PacketParser
 
 def tremble_list(l, r, skip=1):
@@ -22,8 +22,8 @@ def alt_line(surface, color, start, end, w=1):
     arrow  = _end - _start
 
     l = norm(arrow) #Vector norm
-    t = angle_from_vector(arrow)
-    rot = get_rot_matrix(t)
+    t = alg.angle_from_vector(arrow)
+    rot = alg.get_rot_matrix(t)
 
     vertex = [
         matrix([0, w]).T,
@@ -45,8 +45,8 @@ def arrow_line(surface, color, start, end, w=1, ratio=2):
     w_line, w_tri = w, (w/2)*ratio
     _start, _end = matrix([start[0], start[1]]).T, matrix([end[0], end[1]]).T
     vector = _end - _start
-    t = angle_from_vector(vector)
-    rot = get_rot_matrix(t)
+    t = alg.angle_from_vector(vector)
+    rot = alg.get_rot_matrix(t)
 
     vertex = [
         matrix([0, w_tri]).T,
@@ -54,11 +54,57 @@ def arrow_line(surface, color, start, end, w=1, ratio=2):
         matrix([sqrt(3.0)*w_tri, 0]).T
     ]
 
-    vertex = [rot * v + (_end * 0.99) for v in vertex] #Rotate and shift
+    vertex = [rot * v + _end for v in vertex] #Rotate and shift
     vertex = [(v[0,0], v[1,0]) for v in vertex] #Convert in tuples
 
     alt_line(surface, color, start, end, w_line)
     pygame.draw.polygon(surface, color, vertex, 0)
+
+def draw_stroke_order(surface, color, stroke, num, r, w, l):
+    """Draws number and arrow by a stroke.
+
+    Args:
+      surface (pygame.Surface): The surface you want it to draw on.
+      color (pygame.Color): Color of number and arrow.
+      stroke ([tuple]): List of points.
+      num (int): Number of arrow.
+      r (int): Radius between an arrow and a stroke.
+      w (int): Width of arrow.
+      l (int): Length of arrow.
+
+    """
+
+    dist = alg.get_stroke_distance(stroke)
+    dl = 0 #Sum of distances between each points on a stroke
+    st = stroke#[::2] #Reduce points for performance
+    st_pair = zip(st[:-1], st[1:])
+
+    for ((i, j), k) in zip(st_pair, range(len(st))):
+        vec_rel = matrix(j) - matrix(i)
+        dl += norm(vec_rel)
+        if dl > (dist*0.1):
+            p1 = k
+            break
+
+    dl = 0
+    for ((i, j), k) in zip(st_pair, range(p1, len(st))):
+        vec_rel = matrix(j) - matrix(i)
+        dl += norm(vec_rel)
+        if dl > (dist*0.2):
+            p2 = k
+            break
+
+    p_from = st[p1]
+    rel    = alg.vec_between_two(st[p1], st[p2], normalize=True, rtype=tuple)
+    print('  st[p1]: ', st[p1])
+    print('  st[p2]: ', st[p2])
+    print('  rel: ', rel)
+    rel    = [v*l for v in rel]
+    print('  rel_: ', rel)
+    p_to   = tuple(sum(x) for x in zip(list(st[p1]), rel))
+
+    arrow_line(surface, color, p_from, p_to, w)
+
 
 def main():
     wx, wy, oversampling = 640, 480, 1
@@ -112,10 +158,10 @@ def main():
 
         mouse = pygame.mouse.get_pos()
         mouse_dist = norm(mouse)
-        #arrow_line(surface, col['red'], (50, 50), mouse, mouse_dist/8, 3)
+        arrow_line(surface, col['red'], (500, 400), mouse, mouse_dist/8, 3)
 
         for (st, co) in zip(stroke_list, color_list): # Draw lines
-            if len(st) >= 2:
+            if len(st) >= 5:
                 if   chose_mode == mode['normal']:
                     pygame.draw.lines(surface, co, 0, st, 4)
 
@@ -124,6 +170,7 @@ def main():
                     #alt_lines(surface, co, tremble_list(st, 3, 2), 20)
                 elif chose_mode == mode['order']:
                     pygame.draw.lines(surface, co, 0, st, 4)
+                    draw_stroke_order(surface, co, st, 1, 0, 5, 20)
 
                     #arrow_line(surface, co, )
 
