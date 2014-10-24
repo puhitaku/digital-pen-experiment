@@ -2,7 +2,7 @@ import pygame, sys, random
 from pygame.locals import *
 from numpy import matrix, transpose, angle
 from numpy.linalg import norm
-from math import sin, cos, sqrt, degrees
+from math import sin, cos, sqrt, degrees, pi
 import Algebra as alg
 import PacketParser
 
@@ -60,11 +60,12 @@ def arrow_line(surface, color, start, end, w=1, ratio=2):
     alt_line(surface, color, start, end, w_line)
     pygame.draw.polygon(surface, color, vertex, 0)
 
-def draw_stroke_order(surface, color, stroke, num, r, w, l):
+def draw_stroke_order(surface, font, color, stroke, num, r, w, l):
     """Draws number and arrow by a stroke.
 
     Args:
       surface (pygame.Surface): The surface you want it to draw on.
+      font (pygame.font): The font of number.
       color (pygame.Color): Color of number and arrow.
       stroke ([tuple]): List of points.
       num (int): Number of arrow.
@@ -94,20 +95,36 @@ def draw_stroke_order(surface, color, stroke, num, r, w, l):
             p2 = k
             break
 
-    p_from = st[p1]
+    p_from = list(st[p1])
     rel    = alg.vec_between_two(st[p1], st[p2], normalize=True, rtype=tuple)
-    print('  st[p1]: ', st[p1])
-    print('  st[p2]: ', st[p2])
-    print('  rel: ', rel)
     rel    = [v*l for v in rel]
-    print('  rel_: ', rel)
-    p_to   = tuple(sum(x) for x in zip(list(st[p1]), rel))
+    p_to   = [sum(x) for x in zip(list(st[p1]), rel)]
 
-    arrow_line(surface, color, p_from, p_to, w)
+    shift  = alg.vec_between_two(p_from, p_to, normalize=True, rtype=matrix).T
+
+    if -pi/2 < alg.angle_from_vector(shift) < pi/2:
+        shift_dir = -pi/2
+    else:
+        shift_dir = pi/2
+
+    shift  = alg.get_rot_matrix(shift_dir) * shift
+    shift  = shift.T.tolist()
+    shift  = [shift[0][0], shift[0][1]]
+    p_from = [v+(s*r) for (v, s) in zip(p_from, shift)]
+    p_to   = [v+(s*r) for (v, s) in zip(p_to, shift)]
+
+    arrow_line(surface, color, tuple(p_from), tuple(p_to), w)
+
+    pos_num = [v+(s*r) for (v, s)
+               in zip(alg.middle_between_two(p_from, p_to), shift)]
+    surface_num = font.render(str(num), False, color)
+    rect_num = surface_num.get_rect()
+    rect_num.midbottom = tuple(pos_num)
+    surface.blit(surface_num, rect_num)
 
 
 def main():
-    wx, wy, oversampling = 640, 480, 1
+    wx, wy, over = 640, 480, 2  #over = oversampling
 
     parser = PacketParser.Parser(port = 6)
     parser.start()
@@ -115,9 +132,9 @@ def main():
     pygame.init()
     fps = pygame.time.Clock()
     window = pygame.display.set_mode((wx, wy))
-    surface = pygame.Surface((wx*oversampling, wy*oversampling))
+    surface = pygame.Surface((wx*over, wy*over))
     font = pygame.font.Font('C:\\windows\\fonts\\lucon.ttf', 50)
-    scale = 0.15
+    scale = 0.15 * over
     stroke_list = []
     color_list = []
 
@@ -158,21 +175,20 @@ def main():
 
         mouse = pygame.mouse.get_pos()
         mouse_dist = norm(mouse)
-        arrow_line(surface, col['red'], (500, 400), mouse, mouse_dist/8, 3)
+        #arrow_line(surface, col['red'], (500, 400), mouse, mouse_dist/8, 3)
 
-        for (st, co) in zip(stroke_list, color_list): # Draw lines
+        for (st, co, i) in zip(stroke_list, color_list, range(1, len(stroke_list)+1)): # Draw lines
             if len(st) >= 5:
                 if   chose_mode == mode['normal']:
-                    pygame.draw.lines(surface, co, 0, st, 4)
+                    pygame.draw.lines(surface, co, 0, st, 6*over)
 
                 elif chose_mode == mode['tremble']:
-                    pygame.draw.lines(surface, co, 0, tremble_list(st, 3, 2), 4)
+                    pygame.draw.lines(surface, co, 0, tremble_list(st, 5, 2), 6*over)
                     #alt_lines(surface, co, tremble_list(st, 3, 2), 20)
                 elif chose_mode == mode['order']:
-                    pygame.draw.lines(surface, co, 0, st, 4)
-                    draw_stroke_order(surface, co, st, 1, 0, 5, 20)
-
-                    #arrow_line(surface, co, )
+                    pygame.draw.lines(surface, co, 0, st, 6*over)
+                    draw_stroke_order(surface, font, col['red'], st,
+                                      i, 15*over, 10*over, 30*over)
 
         for event in pygame.event.get(): # Deal with events
             if event.type == QUIT:
