@@ -6,17 +6,26 @@ class Packet(object):
         self.code = arg[0]
         self.length = arg[2]
 
+    def join_bytes(self, l):
+        l.reverse()
+        s = 0
+        for i,j in enumerate(l):
+            s += j * 256 ** i
+        return s
+
 class InitPacket(Packet):
     """This class contains the informations of a initialization packet."""
     def __init__(self, arg):
         super().__init__(arg)
+        self.time = self.join_bytes(arg[9:13])
 
 class StrokePacket(Packet):
     """This class contains the informations of stroke packets."""
     def __init__(self, arg):
         super().__init__(arg)
-        self.x = arg[19] * 256 + arg[20]
-        self.y = arg[21] * 256 + arg[22]
+        self.time = self.join_bytes(arg[7:11])
+        self.x = self.join_bytes(arg[19:21])
+        self.y = self.join_bytes(arg[21:23])
         self.pressure = 256 - arg[23]
 
 class Parser(threading.Thread):
@@ -48,6 +57,8 @@ class Parser(threading.Thread):
             if pct[0] == 0x02 :
                 pct.extend(list(self.s.read( pct[2] )))
                 self.init = InitPacket(pct)
+                print(  "0x02: initiation packet, Length =", self.init.length,
+                        ", Time =", self.init.time)
 
             elif pct[0] == 0x03 :
                 if len(self.copied) > 0:
@@ -58,6 +69,7 @@ class Parser(threading.Thread):
                 self.stroke.append(_p)
 
                 print(  "0x03: stroke packet, Length =", _p.length,
+                        ", Time =", _p.time,
                         ", X =", _p.x,
                         ", Y =", _p.y,
                         ", Pressure =", _p.pressure)
