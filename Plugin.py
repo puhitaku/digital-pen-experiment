@@ -6,9 +6,18 @@ from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
 from yapsy.PluginInfo import PluginInfo
 
-class DPEPluginManager(PluginManager):
+class DpxPluginManager(PluginManager):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.setPluginPlaces(['plugins'])
+        self.setCategoriesFilter({
+            'Parse': IParserPlugin,
+            'Draw': IDrawPlugin
+            })
+        self.collectPlugins()
+
+        for plugin in self.getAllPlugins():
+            plugin.plugin_object.print_name()
 
 
 class YetAnotherPluginManager(PluginManager):
