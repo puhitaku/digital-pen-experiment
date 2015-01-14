@@ -4,10 +4,12 @@
 """
 
 import sys
+from PluginManager import DpxPluginManager
 
 def main():
-    pass
+    manager = DpxPluginManager()
 
-if __main__ == '__main__':
+
+if __name__ == '__main__':
     main()
     sys.exit()
