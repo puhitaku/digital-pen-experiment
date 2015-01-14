@@ -1,23 +1,26 @@
 import os, logging
 from io import StringIO
-from threading import thread
+from threading import Thread
 
 from yapsy.PluginManager import PluginManager
 from yapsy.IPlugin import IPlugin
 from yapsy.PluginInfo import PluginInfo
 
+import BasePlugin
+
 class DpxPluginManager(PluginManager):
     def __init__(self, **kwargs):
+        kwargs['plugin_info_ext'] = 'dpx-plugin'
         super().__init__(**kwargs)
         self.setPluginPlaces(['plugins'])
         self.setCategoriesFilter({
-            'Parse': IParserPlugin,
-            'Draw': IDrawPlugin
+            'Parse': BasePlugin.ParserPlugin,
+            'Draw': BasePlugin.DrawPlugin
             })
         self.collectPlugins()
 
         for plugin in self.getAllPlugins():
-            plugin.plugin_object.print_name()
+            plugin.plugin_object.invoke()
 
 
 class YetAnotherPluginManager(PluginManager):
