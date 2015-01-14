@@ -1,0 +1,8 @@
+[Core]
+Name = Serial Parser
+Module = SerialParser
+
+[Documentation]
+Author = Takumi Sueda
+Version = 1.0
+Description = This plugin parses packets from serial port.
