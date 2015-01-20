@@ -22,11 +22,16 @@ class DpxPluginManager(PluginManager, Logger):
         self.log.debug('Collecting / firing plugins')
         self.collectPlugins()
 
-        plugins = [x.name for x in self.getAllPlugins()]
+        plugins = self.getAllPlugins()
+        names = [x.name for x in plugins]
+        categories = self.getCategories()
         if len(plugins) > 0:
-            self.log.debug('Collected plugins: {0}'.format(plugins))
+            self.log.debug('Collected plugins: {0}'.format(names))
         else:
             self.log.debug('No plugins were collected!')
+
+        for p in plugins:
+            self.activatePluginByName(p.name, p.category)
 
 class YetAnotherPluginManager(PluginManager):
     """This class manages plugin's availability and creates plugin thread.
