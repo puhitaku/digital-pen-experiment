@@ -19,16 +19,16 @@ class DpxPluginManager(PluginManager, Logger):
             'Parse': BasePlugin.ParserPlugin,
             'Draw': BasePlugin.DrawPlugin
             })
-        self.log.debug('Collecting / firing plugins')
+        self.debug('Collecting / firing plugins')
         self.collectPlugins()
 
         plugins = self.getAllPlugins()
         names = [x.name for x in plugins]
         categories = self.getCategories()
         if len(plugins) > 0:
-            self.log.debug('Collected plugins: {0}'.format(names))
+            self.debug('Collected plugins: {0}'.format(names))
         else:
-            self.log.debug('No plugins were collected!')
+            self.error('No plugins were collected!', 'ouch')
 
         for p in plugins:
             self.activatePluginByName(p.name, p.category)

@@ -5,4 +5,4 @@ class SerialParser(BasePlugin.ParserPlugin):
         super().__init__()
 
     def activate(self):
-        self.log.debug('Successfully loaded :)')
+        self.debug('Successfully loaded', 'smile')
