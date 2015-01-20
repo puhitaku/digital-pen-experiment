@@ -7,21 +7,31 @@ from yapsy.IPlugin import IPlugin
 from yapsy.PluginInfo import PluginInfo
 
 import BasePlugin
+from Logger import Logger
 
-class DpxPluginManager(PluginManager):
+class DpxPluginManager(PluginManager, Logger):
     def __init__(self, **kwargs):
         kwargs['plugin_info_ext'] = 'dpx-plugin'
-        super().__init__(**kwargs)
+        PluginManager.__init__(self, **kwargs)
+        Logger.__init__(self) #Compromise
         self.setPluginPlaces(['plugins'])
         self.setCategoriesFilter({
             'Parse': BasePlugin.ParserPlugin,
             'Draw': BasePlugin.DrawPlugin
             })
+        self.log.debug('Collecting / firing plugins')
         self.collectPlugins()
 
-        for plugin in self.getAllPlugins():
-            plugin.plugin_object.invoke()
+        plugins = self.getAllPlugins()
+        names = [x.name for x in plugins]
+        categories = self.getCategories()
+        if len(plugins) > 0:
+            self.log.debug('Collected plugins: {0}'.format(names))
+        else:
+            self.log.debug('No plugins were collected!')
 
+        for p in plugins:
+            self.activatePluginByName(p.name, p.category)
 
 class YetAnotherPluginManager(PluginManager):
     """This class manages plugin's availability and creates plugin thread.
