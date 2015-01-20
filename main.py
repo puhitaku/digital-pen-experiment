@@ -8,8 +8,8 @@ from PluginManager import DpxPluginManager
 from Logger import Logger
 
 def main():
-    log = Logger('main').get_logger_object()
-    log.debug('Welcome')
+    log = Logger('main')
+    log.debug('Welcome', 'smile')
 
     manager = DpxPluginManager()
 
